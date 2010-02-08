@@ -1,6 +1,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
-TestCaseRoot = Class.new(Test::Unit::TestCase)
+TestCaseRoot = Class.new(Dataset::Testing::TestCase)
 TestCaseChild = Class.new(TestCaseRoot)
 TestCaseSibling = Class.new(TestCaseRoot)
 TestCaseGrandchild = Class.new(TestCaseChild)
@@ -10,7 +10,7 @@ DatasetTwo = Class.new(Dataset::Base)
 
 describe Dataset::Session do
   before do
-    @database = Dataset::Database::Sqlite3.new({:database => SQLITE_DATABASE}, "#{SPEC_ROOT}/tmp")
+    @database = Dataset::Database.new
     @session = Dataset::Session.new(@database)
   end
   
@@ -26,13 +26,20 @@ describe Dataset::Session do
       @session.datasets_for(TestCaseRoot).should == [DatasetOne, DatasetTwo]
     end
     
+    it 'should combine datasets from test superclasses into subclasses (using a better test ;)' do
+      @session.add_dataset TestCaseRoot, DatasetOne
+      @session.add_dataset TestCaseChild, DatasetTwo
+      @session.datasets_for(TestCaseChild).should == [DatasetOne, DatasetTwo]
+      @session.datasets_for(TestCaseGrandchild).should == [DatasetOne, DatasetTwo]
+    end
+    
     it 'should combine datasets from test superclasses into subclasses' do
       @session.add_dataset TestCaseRoot, DatasetOne
       @session.add_dataset TestCaseChild, DatasetTwo
       @session.add_dataset TestCaseChild, DatasetOne
       @session.datasets_for(TestCaseChild).should == [DatasetOne, DatasetTwo]
       @session.datasets_for(TestCaseGrandchild).should == [DatasetOne, DatasetTwo]
-    end
+    end    
     
     it 'should include those that a dataset declares it uses' do
       dataset_one = Class.new(Dataset::Base) do
@@ -43,6 +50,20 @@ describe Dataset::Session do
       end
       @session.add_dataset TestCaseRoot, dataset_two
       @session.add_dataset TestCaseChild, DatasetTwo
+      @session.datasets_for(TestCaseChild).should == [DatasetTwo, dataset_one, DatasetOne, dataset_two]
+      @session.datasets_for(TestCaseGrandchild).should == [DatasetTwo, dataset_one, DatasetOne, dataset_two]
+    end
+    
+    it 'should include those that a dataset declares it uses (using a better test ;)' do
+      dataset_one = Class.new(Dataset::Base) do
+        uses DatasetTwo
+      end
+      dataset_two = Class.new(Dataset::Base) do
+        uses dataset_one, DatasetOne
+      end
+      @session.add_dataset TestCaseRoot, dataset_one
+      @session.add_dataset TestCaseChild, dataset_two
+      @session.datasets_for(TestCaseRoot).should == [DatasetTwo, dataset_one]
       @session.datasets_for(TestCaseChild).should == [DatasetTwo, dataset_one, DatasetOne, dataset_two]
       @session.datasets_for(TestCaseGrandchild).should == [DatasetTwo, dataset_one, DatasetOne, dataset_two]
     end
@@ -226,8 +247,10 @@ describe Dataset::Session do
       Thing.count.should == 1
       Place.count.should == 1
       
+      # loading a sibling in the same tree as the previous load forces a reload
+      # this causes dataset_one's load_count to increase to 2
       @session.load_datasets_for TestCaseSibling
-      dataset_one_load_count.should == 1
+      dataset_one_load_count.should == 2
       dataset_two_load_count.should == 1
       Thing.count.should == 1
       Place.count.should == 0
@@ -282,8 +305,8 @@ describe Dataset::Session do
       binding_two   = Dataset::SessionBinding.new(binding_one)
       binding_three = Dataset::SessionBinding.new(binding_one)
       
-      Dataset::SessionBinding.should_receive(:new).with(@database).and_return(binding_one)
-      Dataset::SessionBinding.should_receive(:new).with(binding_one).twice().and_return(binding_two)
+      Dataset::SessionBinding.should_receive(:new).with(@database).twice().and_return(binding_one)
+      Dataset::SessionBinding.should_receive(:new).with(binding_one).and_return(binding_two)
       
       dataset_one = Class.new(Dataset::Base) { define_method :load do; end }
       dataset_two = Class.new(Dataset::Base) { define_method :load do; end }
@@ -291,8 +314,12 @@ describe Dataset::Session do
       @session.add_dataset TestCaseRoot, dataset_one
       @session.add_dataset TestCaseChild, dataset_two
       
+      # these two calls share the same session
       @session.load_datasets_for TestCaseRoot
+      # this call will use a wrapped version of the previous session
       @session.load_datasets_for TestCaseChild
+      
+      # this will force the creation of a new session
       @session.load_datasets_for TestCaseSibling
     end
   end

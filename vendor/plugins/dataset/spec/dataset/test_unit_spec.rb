@@ -1,13 +1,10 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
 require 'test/unit/testresult'
-class Test::Unit::TestCase
-  include Dataset
-end
 
 describe Test::Unit::TestCase do
   it 'should have a dataset method' do
-    testcase = Class.new(Test::Unit::TestCase)
+    testcase = Class.new(Dataset::Testing::TestCase)
     testcase.should respond_to(:dataset)
   end
   
@@ -19,7 +16,7 @@ describe Test::Unit::TestCase do
     dataset_two = Class.new(Dataset::Base) do
       define_method(:load) { load_count += 1 }
     end
-    testcase = Class.new(Test::Unit::TestCase) do
+    testcase = Class.new(Dataset::Testing::TestCase) do
       dataset dataset_one, dataset_two
     end
     run_testcase(testcase)
@@ -28,7 +25,7 @@ describe Test::Unit::TestCase do
   
   it 'should provide one dataset session for tests' do
     sessions = []
-    testcase = Class.new(Test::Unit::TestCase) do
+    testcase = Class.new(Dataset::Testing::TestCase) do
       dataset Class.new(Dataset::Base)
       
       define_method(:test_one) do
@@ -55,12 +52,12 @@ describe Test::Unit::TestCase do
       end
     end
     
-    testcase = Class.new(Test::Unit::TestCase) do
-      dataset(dataset_one)
+    testcase = Class.new(Dataset::Testing::TestCase) do
+      self.dataset(dataset_one)
       def test_one; end
     end
     testcase_child = Class.new(testcase) do
-      dataset(dataset_two)
+      self.dataset(dataset_two)
       def test_two; end
     end
     
@@ -75,7 +72,7 @@ describe Test::Unit::TestCase do
   
   it 'should forward blocks passed in to the dataset method' do
     load_count = 0
-    testcase = Class.new(Test::Unit::TestCase) do
+    testcase = Class.new(Dataset::Testing::TestCase) do
       dataset_class = Class.new(Dataset::Base)
       dataset dataset_class do
         load_count += 1
@@ -88,7 +85,7 @@ describe Test::Unit::TestCase do
   
   it 'should forward blocks passed in to the dataset method that do not use a dataset class' do
     load_count = 0
-    testcase = Class.new(Test::Unit::TestCase) do
+    testcase = Class.new(Dataset::Testing::TestCase) do
       dataset do
         load_count += 1
       end
@@ -100,7 +97,7 @@ describe Test::Unit::TestCase do
   
   it 'should copy instance variables from block to tests' do
     value_in_test = nil
-    testcase = Class.new(Test::Unit::TestCase) do
+    testcase = Class.new(Dataset::Testing::TestCase) do
       dataset do
         @myvar = 'Hello'
       end
@@ -115,7 +112,7 @@ describe Test::Unit::TestCase do
   
   it 'should copy instance variables from block to subclass blocks' do
     value_in_subclass_block = nil
-    testcase = Class.new(Test::Unit::TestCase) do
+    testcase = Class.new(Dataset::Testing::TestCase) do
       dataset do
         @myvar = 'Hello'
       end
@@ -138,7 +135,7 @@ describe Test::Unit::TestCase do
       end
     end
     
-    testcase = Class.new(Test::Unit::TestCase) do
+    testcase = Class.new(Dataset::Testing::TestCase) do
       self.dataset(dataset)
       def test_one; end
       def test_two; end
@@ -156,7 +153,7 @@ describe Test::Unit::TestCase do
       end
     end
     
-    testcase = Class.new(Test::Unit::TestCase) do
+    testcase = Class.new(Dataset::Testing::TestCase) do
       self.dataset(dataset)
       define_method :test_model_finders do
         found_model = things(:mything)
@@ -185,19 +182,19 @@ describe Test::Unit::TestCase do
     end
     
     test_instance = nil
-    testcase = Class.new(Test::Unit::TestCase) do
+    testcase = Class.new(Dataset::Testing::TestCase) do
       self.dataset(dataset_two)
-      define_method :test_model_finders do
+      define_method :test_model_finders_unique do
         test_instance = self
       end
     end
     
     run_testcase(testcase)
     
-    testcase.should_not respond_to(:helper_one)
-    testcase.should_not respond_to(:helper_two)
-    test_instance.should respond_to(:helper_one)
-    test_instance.should respond_to(:helper_two)
+    testcase.respond_to?(:helper_one).should be_false
+    testcase.respond_to?(:helper_two).should be_false
+    test_instance.respond_to?(:helper_one).should be_true
+    test_instance.respond_to?(:helper_two).should be_true
   end
   
   def run_testcase(testcase)
@@ -206,5 +203,6 @@ describe Test::Unit::TestCase do
     testcase.suite.run(result) {}
     result.failure_count.should be(0)
     result.error_count.should be(0)
+    result.run_count.should > 0
   end
 end

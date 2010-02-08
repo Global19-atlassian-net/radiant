@@ -1,18 +1,16 @@
-require 'activesupport'
-require 'activerecord'
+require 'active_support'
+require 'active_record'
 
 require 'dataset/version'
 require 'dataset/instance_methods'
 require 'dataset/base'
-require 'dataset/database/base'
-require 'dataset/database/mysql'
-require 'dataset/database/sqlite3'
-require 'dataset/database/postgresql'
+require 'dataset/database'
 require 'dataset/collection'
 require 'dataset/load'
 require 'dataset/resolver'
 require 'dataset/session'
 require 'dataset/session_binding'
+require 'dataset/record/heirarchy'
 require 'dataset/record/meta'
 require 'dataset/record/fixture'
 require 'dataset/record/model'
@@ -72,14 +70,14 @@ require 'dataset/record/model'
 #
 module Dataset
   def self.included(test_context) # :nodoc:
-    if test_context.name =~ /World\Z/
+    if test_context.name =~ /Initializer\Z/
       require 'dataset/extensions/cucumber'
     elsif test_context.name =~ /TestCase\Z/
       require 'dataset/extensions/test_unit'
     elsif test_context.name =~ /ExampleGroup\Z/
       require 'dataset/extensions/rspec'
     else
-      raise "I don't understand your test framework"
+      raise "Hi, Dataset here. I can't figure out what test framework you are using."
     end
     
     test_context.extend ContextClassMethods
@@ -95,17 +93,11 @@ module Dataset
         superclass_delegating_accessor :dataset_session
       end
     end
-    
-    mattr_accessor :datasets_database_dump_path
-    self.datasets_database_dump_path = File.expand_path(RAILS_ROOT + '/tmp/dataset') if defined?(RAILS_ROOT)
-    
+        
     # Replaces the default Dataset::Resolver with one that will look for
-    # dataset class definitions in the specified directory. Captures of the
-    # database will be stored in a subdirectory 'tmp' (see
-    # Dataset::Database::Base).
+    # dataset class definitions in the specified directory.
     def datasets_directory(path)
       Dataset::Resolver.default = Dataset::DirectoryResolver.new(path)
-      Dataset::ContextClassMethods.datasets_database_dump_path = File.join(path, '/tmp/dataset')
     end
     
     def add_dataset(*datasets, &block) # :nodoc:
@@ -118,10 +110,7 @@ module Dataset
     
     def dataset_session_in_hierarchy # :nodoc:
       self.dataset_session ||= begin
-        database_spec = ActiveRecord::Base.configurations['test'].with_indifferent_access
-        database_class = Dataset::Database.const_get(database_spec[:adapter].classify)
-        database = database_class.new(database_spec, Dataset::ContextClassMethods.datasets_database_dump_path)
-        Dataset::Session.new(database)
+        Dataset::Session.new(Dataset::Database.new)
       end
     end
   end
