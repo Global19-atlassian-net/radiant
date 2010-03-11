@@ -126,11 +126,15 @@ module ApplicationHelper
     when :meta, :meta_less
       meta_errors?
     end
-    v ? {} : {:style => "display:none"}
+    v ? {} : {:class => "hidden"}
   end
 
   def meta_errors?
     false
+  end
+  
+  def meta_label
+    meta_errors? ? 'Less' : 'More'
   end
 
   def toggle_javascript_for(id)
@@ -159,6 +163,17 @@ module ApplicationHelper
 
   def nav_tabs
     admin.nav
+  end
+  
+  def stylesheet_and_javascript_overrides
+    overrides = ''
+    if File.exist?("#{Rails.root}/public/stylesheets/admin/overrides.css") || File.exist?("#{Rails.root}/public/stylesheets/sass/admin/overrides.sass")
+      overrides << stylesheet_link_tag('admin/overrides')
+    end
+    if File.exist?("#{Rails.root}/public/javascripts/admin/overrides.js")
+      overrides << javascript_include_tag('admin/overrides')
+    end
+    overrides
   end
 
   private

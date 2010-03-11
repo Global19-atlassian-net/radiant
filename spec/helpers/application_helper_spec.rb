@@ -132,12 +132,22 @@ describe ApplicationHelper do
   
   it "should determine whether a meta area item should be visible" do
     helper.meta_visible(:meta_more).should be_empty
-    helper.meta_visible(:meta_less).should == {:style => "display:none"} 
-    helper.meta_visible(:meta).should == {:style => "display:none"} 
+    helper.meta_visible(:meta_less).should == {:class => "hidden"} 
+    helper.meta_visible(:meta).should == {:class => "hidden"} 
   end
   
   it "should not have meta errors" do
     helper.meta_errors?.should be_false
+  end
+  
+  it "should provide a meta_label of 'Less' when meta_errors? is true" do
+    helper.stub!(:meta_errors?).and_return(true)
+    helper.meta_label.should == 'Less'
+  end
+  
+  it "should provide a meta_label of 'More' when meta_errors? is false" do
+    helper.stub!(:meta_errors?).and_return(false)
+    helper.meta_label.should == 'More'
   end
   
   it "should render a Javascript snippet to toggle the meta area" do
@@ -160,5 +170,39 @@ describe ApplicationHelper do
   
   it "should include the regions helper" do
     ApplicationHelper.included_modules.should include(Admin::RegionsHelper)
+  end
+  
+  describe 'stylesheet_and_javascript_overrides' do
+    before do
+      @override_css_path = "#{Rails.root}/public/stylesheets/admin/overrides.css"
+      @override_sass_path = "#{Rails.root}/public/stylesheets/sass/admin/overrides.sass"
+      @override_js_path = "#{Rails.root}/public/javascripts/admin/overrides.js"
+      File.stub!(:exist?)
+    end
+    it "should render a link to the overrides.css file when it exists" do
+      File.should_receive(:exist?).with(@override_css_path).and_return(true)
+      helper.stylesheet_and_javascript_overrides.should have_tag('link[href*=?][media=?][rel=?][type=?]','/stylesheets/admin/overrides.css','screen','stylesheet','text/css')
+    end
+    it "should render a link to the overrides.css file when the overrides.sass file exists" do
+      File.should_receive(:exist?).with(@override_sass_path).and_return(true)
+      helper.stylesheet_and_javascript_overrides.should have_tag('link[href*=?][media=?][rel=?][type=?]','/stylesheets/admin/overrides.css','screen','stylesheet','text/css')
+    end
+    it "should not render a link to the overrides.css file when it does not exist" do
+      File.should_receive(:exist?).at_least(:once).with(@override_css_path).and_return(false)
+      helper.stylesheet_and_javascript_overrides.should_not have_tag('link[href*=?][media=?][rel=?][type=?]','/stylesheets/admin/overrides.css','screen','stylesheet','text/css')
+    end
+    it "should not render a link to the overrides.css file when the overrides.css and overrides.sass file does not exist" do
+      File.should_receive(:exist?).at_least(:once).with(@override_css_path).and_return(false)
+      File.should_receive(:exist?).at_least(:once).with(@override_sass_path).and_return(false)
+      helper.stylesheet_and_javascript_overrides.should_not have_tag('link[href*=?][media=?][rel=?][type=?]','/stylesheets/admin/overrides.css','screen','stylesheet','text/css')
+    end
+    it "should render a link to the overrides.js file when it exists" do
+      File.should_receive(:exist?).at_least(:once).with(@override_js_path).and_return(true)
+      helper.stylesheet_and_javascript_overrides.should have_tag('script[src*=?][type=?]','/javascripts/admin/overrides.js', 'text/javascript')
+    end
+    it "should not render a link to the overrides.js file when it does not exist" do
+      File.should_receive(:exist?).at_least(:once).with(@override_js_path).and_return(false)
+      helper.stylesheet_and_javascript_overrides.should_not have_tag('script[src*=?][type=?]','/javascripts/admin/overrides.js', 'text/javascript')
+    end
   end
 end
