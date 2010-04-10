@@ -38,7 +38,7 @@ describe Radiant::ExtensionLoader do
   it "should load gem extensions with paths matching radiant-*-extension" do
     gem_path = File.join RADIANT_ROOT, %w(test fixtures gems radiant-gem_ext-extension-0.0.0)
     @configuration.should_receive(:extensions).at_least(:once).and_return([:gem_ext])
-    @instance.stub!(:all_extension_roots).and_return([File.expand_path gem_path])
+    @instance.stub!(:all_extension_roots).and_return([File.expand_path(gem_path)])
     @instance.send(:select_extension_roots).should == [gem_path]
   end
 
@@ -141,6 +141,13 @@ describe Radiant::ExtensionLoader do
   it "should have metal paths" do
     @instance.stub!(:load_extension_roots).and_return(@extension_paths)
     @instance.should respond_to(:metal_paths)
+    @instance.metal_paths.should be_instance_of(Array)
+    @instance.metal_paths.all? {|f| File.directory?(f) }.should be_true
+  end
+
+  it "should have locale paths" do
+    @instance.stub!(:load_extension_roots).and_return(@extension_paths)
+    @instance.should respond_to(:locale_paths)
     @instance.metal_paths.should be_instance_of(Array)
     @instance.metal_paths.all? {|f| File.directory?(f) }.should be_true
   end

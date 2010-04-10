@@ -18,6 +18,11 @@ Radiant::Initializer.run do |config|
   # extensions in vendor/extensions are loaded, in alphabetical order. :all
   # can be used as a placeholder for all extensions not explicitly named.
   # config.extensions = [ :all ]
+  
+  # By default, only English translations are loaded. Remove any of these from
+  # the list below if you'd like to provide any of the supported languages
+  config.extensions -= [:dutch_language_pack, :french_language_pack, :german_language_pack,
+                        :italian_language_pack, :japanese_language_pack, :russian_language_pack]
 
   # Your secret key for verifying cookie session data integrity.
   # If you change this key, all old sessions will become invalid!
@@ -56,6 +61,11 @@ Radiant::Initializer.run do |config|
 
   # Activate observers that should always be running
   config.active_record.observers = :user_action_observer
+  
+  # The internationalization framework can be changed to have another default locale (standard is :en) or more load paths.
+  # All files from config/locales/*.rb,yml are added automatically.
+  # config.i18n.load_path << Dir[File.join(RAILS_ROOT, 'my', 'locales', '*.{rb,yml}')]
+  # config.i18n.default_locale = :'en'
 
   # Make Active Record use UTC-base instead of local time
   config.time_zone = 'UTC'
@@ -79,3 +89,4 @@ end
 
 Haml::Template.options[:format] = :html5
 Haml::Template.options[:ugly] = true if ENV['RAILS_ENV'] == 'production'
+

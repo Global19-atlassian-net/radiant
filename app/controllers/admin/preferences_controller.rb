@@ -19,7 +19,7 @@ class Admin::PreferencesController < ApplicationController
       if @user.update_attributes(params[:user])
         redirect_to :action => 'show'
       else
-        flash[:error] = 'There was an error updating your preferences.'
+        flash[:error] = t('preferences_controller.error_updating')
         render :action => 'edit'
       end
     else
@@ -36,7 +36,7 @@ class Admin::PreferencesController < ApplicationController
 
   def valid_params?
     hash = (params[:user] || {}).symbolize_keys
-    (hash.keys - User.protected_attributes).size == 0
+    (hash.keys - User.unprotected_attributes).size == 0
   end
 
   def announce_bad_data

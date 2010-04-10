@@ -61,8 +61,16 @@ unless File.directory? "#{RAILS_ROOT}/app"
       rm_rf "vendor/radiant"
     end
 
-    desc "Update both configs, scripts and public/javascripts from Radiant"
-    task :update => [ "update:scripts", "update:javascripts", "update:configs", "update:images", "update:stylesheets" ]
+    desc "Update configs, scripts, sass, stylesheets and javascripts from Radiant."
+    task :update do
+      tasks = %w{scripts javascripts configs images sass stylesheets cached_assets}
+      tasks = tasks & ENV['ONLY'].split(',') if ENV['ONLY']
+      tasks = tasks - ENV['EXCEPT'].split(',') if ENV['EXCEPT']
+      tasks.each do |task| 
+        puts "* Updating #{task}"
+        Rake::Task["radiant:update:#{task}"].invoke
+      end
+    end
 
     namespace :update do
       desc "Add new scripts to the instance script/ directory"
@@ -94,6 +102,12 @@ unless File.directory? "#{RAILS_ROOT}/app"
         end
         copy_javascripts[RAILS_ROOT + '/public/javascripts/', Dir["#{File.dirname(__FILE__)}/../../public/javascripts/*.js"]]
         copy_javascripts[RAILS_ROOT + '/public/javascripts/admin/', Dir["#{File.dirname(__FILE__)}/../../public/javascripts/admin/*.js"]]
+      end
+
+      desc "Update the cached assets for the admin UI"
+      task :cached_assets do
+        dir = File.join(Rails.root, 'public', 'javascripts', 'admin')
+        TaskSupport.cache_files(dir, TaskSupport.find_admin_js, 'all.js')
       end
 
       desc "Update config/boot.rb from your current radiant install"
@@ -169,6 +183,16 @@ the new files:"
           FileUtils.cp(styles, project_dir)
         end
         copy_stylesheets[RAILS_ROOT + '/public/stylesheets/admin/',Dir["#{File.dirname(__FILE__)}/../../public/stylesheets/admin/*.css"]]
+      end
+
+      desc "Update admin sass files from your current radiant install"
+      task :sass do
+        copy_sass = proc do |project_dir, sass_files|
+          sass_files.reject!{|s| File.basename(s) == 'overrides.sass'} if File.exists?(project_dir + 'overrides.sass') || File.exists?(project_dir + '../overrides.css')
+          FileUtils.mkpath(project_dir)
+          FileUtils.cp_r(sass_files, project_dir)
+        end
+        copy_sass[RAILS_ROOT + '/public/stylesheets/sass/admin/', Dir["#{RADIANT_ROOT}/public/stylesheets/sass/admin/*"]]
       end
     end
   end

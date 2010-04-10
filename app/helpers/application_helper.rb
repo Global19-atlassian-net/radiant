@@ -2,7 +2,7 @@ module ApplicationHelper
   include LocalTime
   include Admin::RegionsHelper
   include Radiant::LegacyRoutes
-
+  
   def config
     Radiant::Config
   end
@@ -24,19 +24,22 @@ module ApplicationHelper
   end
   
   def onsubmit_status(model)
-    model.new_record? ? "Creating #{model.class.name.downcase}&#8230;" : "Saving changes&#8230;"
+    model.new_record? ? t('creating_status', :model => t(model.class.name.downcase)) : "#{I18n.t('saving_changes')}&#8230;"
   end
   
   def save_model_button(model, options = {})
+    model_name = model.class.name.underscore
+    human_model_name = model_name.humanize.titlecase
     options[:label] ||= model.new_record? ?
-      "Create #{model.class.name}" : "Save Changes"
+      t('buttons.create', :name => t(model_name, :default => human_model_name), :default => 'Create ' + human_model_name) :
+      t('buttons.save_changes', :default => 'Save Changes')
     options[:class] ||= "button"
     options[:accesskey] ||= 'S'
     submit_tag options.delete(:label), options
   end
 
   def save_model_and_continue_editing_button(model)
-    submit_tag 'Save and Continue Editing', :name => 'continue', :class => 'button', :accesskey => "s"
+    submit_tag t('buttons.save_and_continue'), :name => 'continue', :class => 'button', :accesskey => "s"
   end
 
   # Redefine pluralize() so that it doesn't put the count at the beginning of
@@ -82,9 +85,9 @@ module ApplicationHelper
 
   def nav_link_to(name, options)
     if current_url?(options)
-      %{<strong>#{ link_to name, options }</strong>}
+      %{<strong>#{ link_to translate_with_default(name), options }</strong>}
     else
-      link_to name, options
+      link_to translate_with_default(name), options
     end
   end
 
@@ -106,9 +109,9 @@ module ApplicationHelper
       name = updated_by ? updated_by.name : nil
       time = (model.updated_at || model.created_at)
       if name or time
-        html = %{<p class="updated_line">Last updated } 
-        html << %{by <strong>#{name}</strong> } if name
-        html << %{at #{timestamp(time)}} if time
+        html = %{<p class="updated_line">#{t('timestamp.last_updated')} } 
+        html << %{#{t('timestamp.by')} <strong>#{name}</strong> } if name
+        html << %{#{t('timestamp.at')} #{timestamp(time)}} if time
         html << %{</p>}
         html
       end
@@ -116,7 +119,8 @@ module ApplicationHelper
   end
 
   def timestamp(time)
-    time.strftime("%I:%M %p on %B %e, %Y").sub("AM", 'am').sub("PM", 'pm')
+    # time.strftime("%I:%M %p on %B %e, %Y").sub("AM", 'am').sub("PM", 'pm')
+    I18n.localize(time, :format => :timestamp)    
   end 
   
   def meta_visible(symbol)
@@ -126,7 +130,7 @@ module ApplicationHelper
     when :meta, :meta_less
       meta_errors?
     end
-    v ? {} : {:class => "hidden"}
+    v ? {} : {:style => "display: none"}
   end
 
   def meta_errors?
@@ -154,7 +158,7 @@ module ApplicationHelper
   end
 
   def filter_options_for_select(selected=nil)
-    options_for_select([['<none>', '']] + TextFilter.descendants.map { |s| s.filter_name }.sort, selected)
+    options_for_select([[t('select.none'), '']] + TextFilter.descendants.map { |s| s.filter_name }.sort, selected)
   end
 
   def body_classes
@@ -163,6 +167,14 @@ module ApplicationHelper
 
   def nav_tabs
     admin.nav
+  end
+  
+  def translate_with_default(name)
+    t(name.underscore.downcase, :default => name)
+  end
+  
+  def available_locales_select
+    [[t('select.default'),'']] + Radiant::AvailableLocales.locales
   end
   
   def stylesheet_and_javascript_overrides

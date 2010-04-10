@@ -31,9 +31,11 @@ Event.addBehavior.reassignAfterAjax = true;
 
 // Wire in Behaviors
 Event.addBehavior({
-  'body':                   ShortcutKeysBehavior(),
-  'a.popup':                Popup.TriggerBehavior(),
-  'table#site_map':         SiteMapBehavior(),
+  'body': ShortcutKeysBehavior(),
+  
+  'a.popup': Popup.TriggerBehavior(),
+  
+  'table#site_map': SiteMapBehavior(),
   
   'input#page_title': function() {
     var title = this;
@@ -49,24 +51,32 @@ Event.addBehavior({
       oldTitle = title.value;
     });
   },
-  'p.more_or_less a': function(event){
-    $(this).observe('click', function(event){
-      if ($(this).hasClassName('more')){ $(this).update('More') }
-      else { $(this).update('Less') }
-      $(this).toggleClassName('more').toggleClassName('less');
-      $('extended_metadata').toggleClassName('hidden');
-      event.stop();
-    })
-  },
   
-  'div#tab_control':        TabControlBehavior(),
-  'table.index':            RuledTableBehavior(),
-  'form':                   Status.FormBehavior(),
-
+  'a.toggle': Toggle.LinkBehavior({
+    onLoad: function(link) {
+      if (/less/i.match(link.innerHTML)) Toggle.toggle(this.toggleWrappers, this.effect);
+    },
+    afterToggle: function(link) {
+      link.toggleClassName('more');
+      link.toggleClassName('less');
+      if (/more/i.match(link.innerHTML)) { link.innerHTML = 'Less'; return; }
+      if (/less/i.match(link.innerHTML)) { link.innerHTML = 'More'; return; }
+    }
+  }),
+  
+  'div#tab_control': TabControlBehavior(),
+  
+  'table.index': RuledTableBehavior(),
+  
+  'form': Status.FormBehavior(),
+  
   'form input.activate': function() {
     this.activate();
   },
-  'form textarea':          CodeAreaBehavior(),
-  'input.date':             DateInputBehavior(),
+  
+  'form textarea': CodeAreaBehavior(),
+  
+  'input.date': DateInputBehavior(),
+  
   'select#page_status_id':  PageStatusBehavior()
 });

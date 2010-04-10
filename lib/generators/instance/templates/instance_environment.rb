@@ -18,6 +18,11 @@ Radiant::Initializer.run do |config|
   # extensions in vendor/extensions are loaded, in alphabetical order. :all
   # can be used as a placeholder for all extensions not explicitly named.
   # config.extensions = [ :all ]
+  
+  # By default, only English translations are loaded. Remove any of these from
+  # the list below if you'd like to provide any of the supported languages
+  config.extensions -= [:dutch_language_pack, :french_language_pack, :german_language_pack,
+                        :italian_language_pack, :japanese_language_pack, :russian_language_pack]
 
   # Your secret key for verifying cookie session data integrity.
   # If you change this key, all old sessions will become invalid!
@@ -76,6 +81,3 @@ Radiant::Initializer.run do |config|
     end
   end
 end
-
-Haml::Template.options[:format] = :html5
-Haml::Template.options[:ugly] = true if ENV['RAILS_ENV'] == 'production'

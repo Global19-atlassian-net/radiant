@@ -101,7 +101,19 @@ describe ApplicationHelper do
     helper.stub!(:request).and_return(request)
     request.stub!(:request_uri).and_return("/admin/pages")
     helper.nav_link_to("Pages", "/admin/pages").should =~ /<strong>/
-    helper.nav_link_to("Snippets", "/admin/snippest").should_not =~ /<strong>/
+    helper.nav_link_to("Snippets", "/admin/snippets").should_not =~ /<strong>/
+  end
+  
+  it "should render an admin link without translation" do
+    helper.nav_link_to("Foo", "/admin/foo").should == '<a href="/admin/foo">Foo</a>'
+  end
+  
+  it "should render an admin section link with translation" do
+    helper.translate_with_default('Pages').should == 'Pages'
+  end
+  
+  it "should render an admin section link without translation" do
+    helper.translate_with_default('Foo').should == 'Foo'
   end
   
   it "should determine whether the current user is an admin" do
@@ -123,7 +135,7 @@ describe ApplicationHelper do
     model.should_receive(:new_record?).and_return(false)
     model.should_receive(:updated_by).and_return(users(:admin))
     model.should_receive(:updated_at).and_return(Time.local(2008, 3, 30, 10, 30))
-    helper.updated_stamp(model).should == %{<p class="updated_line">Last updated by <strong>Admin</strong> at 10:30 am on March 30, 2008</p>}
+    helper.updated_stamp(model).should == %{<p class="updated_line">Last Updated by <strong>Admin</strong> at 10:30 am on March 30, 2008</p>}
   end
   
   it "should render a timezone-adjusted timestamp" do
@@ -132,8 +144,8 @@ describe ApplicationHelper do
   
   it "should determine whether a meta area item should be visible" do
     helper.meta_visible(:meta_more).should be_empty
-    helper.meta_visible(:meta_less).should == {:class => "hidden"} 
-    helper.meta_visible(:meta).should == {:class => "hidden"} 
+    helper.meta_visible(:meta_less).should == {:style => "display: none"}
+    helper.meta_visible(:meta).should == {:style => "display: none"}
   end
   
   it "should not have meta errors" do
